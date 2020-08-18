@@ -13,18 +13,24 @@ fun truth_value(formula: Formula, interpretation: Map<String, Boolean>): Boolean
     }
 }
 
-fun is_satisfiable(formula: Formula): Boolean {
+
+/*
+* ATENÇÃO!
+* A função is_satisfiable pode retornar nulo
+* */
+fun is_satisfiable(formula: Formula): MutableMap<String, Boolean>? {
     val allatoms: MutableSet<Formula> = atoms(formula)
     return satisfiability_check(formula, allatoms, mutableMapOf())
 }
 
 
-fun satisfiability_check(formula: Formula, allAtoms: MutableSet<Formula>, interpretation: MutableMap<String, Boolean>): Boolean {
+private fun satisfiability_check(formula: Formula, allAtoms: MutableSet<Formula>, interpretation: MutableMap<String, Boolean>): MutableMap<String, Boolean>? {
     //println(interpretation)
     //println(allAtoms)
     val natoms = mutableSetOf<Formula>()
     natoms.addAll(allAtoms)
-    if (allAtoms.isEmpty()) return truth_value(formula, interpretation)
+    if (allAtoms.isEmpty())
+        return if (truth_value(formula, interpretation)) interpretation else null
     else {
         val (atom) = allAtoms.take(1)
         natoms.remove(atom)
@@ -38,6 +44,11 @@ fun satisfiability_check(formula: Formula, allAtoms: MutableSet<Formula>, interp
         interpretation2.put(atom.toString(), false)
 
         //println("$interpretation1 ; $interpretation2")
-        return satisfiability_check(formula, natoms, interpretation1) || satisfiability_check(formula, natoms, interpretation2)
+
+        val result = satisfiability_check(formula, natoms, interpretation2)
+
+        return satisfiability_check(formula, natoms, interpretation1) ?: result
+
+
     }
 }
