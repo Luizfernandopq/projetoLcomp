@@ -6,6 +6,8 @@ import Formula
 import Not
 import Or
 import is_satisfiable
+import tableaux
+
 /*
 * O algoritmo a seguir irá pedir alguns dados apenas na forma de números para modelagem do problema
 * */
@@ -118,4 +120,8 @@ fun solucao(formula: Formula): List<String>{
         }
         saida
     } ?: listOf("solução impossível")
+}
+
+fun solucaoTableaux(formula: Formula): MutableMap<String, Boolean>? {
+    return tableaux(formula)
 }

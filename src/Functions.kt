@@ -79,3 +79,21 @@ fun atoms(formula: Formula): MutableSet<Formula> {
     return formulas
 }
 
+fun deMorgan(formula: Formula): Formula{
+    return if (formula is Not) {
+        when (val notFormula = formula.proposicao) {
+            is Not -> notFormula.proposicao
+            is Or -> And(deMorgan(Not(notFormula.left)),deMorgan(Not(notFormula.right)))
+            is And -> Or(deMorgan(Not(notFormula.left)),deMorgan(Not(notFormula.right)))
+            is Implies -> And(deMorgan(notFormula.left),deMorgan(Not(notFormula.right)))
+            is Xor -> OnlyIf(deMorgan(notFormula.left),deMorgan(notFormula.right))
+            is OnlyIf -> Xor(deMorgan(notFormula.left),deMorgan(notFormula.right))
+            else -> formula
+        }
+    } else
+        formula
+}
+
+fun isNullInterpretation(interpretation: MutableMap<String, Boolean>?): Boolean{
+    return interpretation == null
+}
