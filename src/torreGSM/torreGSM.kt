@@ -7,7 +7,6 @@ import Not
 import Or
 import is_satisfiable
 import tableaux
-import tableaux2
 
 /*
 * O algoritmo a seguir irá pedir alguns dados apenas na forma de números para modelagem do problema
@@ -36,7 +35,7 @@ fun calcularPossibilidades(numTorres: Int, numPares: Int){
         val pares: MutableList<Pair<Int, Int>> = entrada(numTorres, numPares)
         val atoms: MutableList<Atom> = criaAtomos(numTorres)
         val premissas: Formula = premissas(numTorres, atoms, pares)
-        println(solucaoTableaux2(premissas))
+        println(solucao(premissas))
     } catch (e: Exception){
         println(listOf(e.toString()))
     }
@@ -127,6 +126,3 @@ fun solucaoTableaux(formula: Formula): MutableMap<String, Boolean>? {
     return tableaux(formula)
 }
 
-fun solucaoTableaux2(formula: Formula): MutableMap<String, Boolean>? {
-    return tableaux2(formula)
-}
