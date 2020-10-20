@@ -33,9 +33,15 @@ fun iniciarTorreGSM(){
 fun calcularPossibilidades(numTorres: Int, numPares: Int){
     try {
         val pares: MutableList<Pair<Int, Int>> = entrada(numTorres, numPares)
+
+        /*
+        * aqui começa o a resolução do problema
+        * */
+        val time = System.currentTimeMillis()
         val atoms: MutableList<Atom> = criaAtomos(numTorres)
         val premissas: Formula = premissas(numTorres, atoms, pares)
         println(solucao(premissas))
+        println("Programa finalizado. Cálculos realidados em ${System.currentTimeMillis() - time} milissegundos")
     } catch (e: Exception){
         println(listOf(e.toString()))
     }
@@ -121,8 +127,3 @@ fun solucao(formula: Formula): List<String>{
         saida
     } ?: listOf("solução impossível")
 }
-
-fun solucaoTableaux(formula: Formula): MutableMap<String, Boolean>? {
-    return tableaux(formula)
-}
-
