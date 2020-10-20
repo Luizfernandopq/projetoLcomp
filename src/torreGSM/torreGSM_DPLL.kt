@@ -25,12 +25,12 @@ fun calcularPossibilidadesDPLL(numTorres: Int, numPares: Int){
         val pares: MutableList<Pair<Int, Int>> = entrada(numTorres, numPares)
         val time = System.currentTimeMillis()
         val premissas: List<MutableList<Int>> = premissasDPLL(numTorres, pares)
-        val list = solucaoDPLL(premissas) as MutableList<Int>
+        var list = solucaoDPLL(premissas)
         if (list.isNotEmpty()) {
+            list = list as MutableList<Int>
             list.removeIf {
                 it < 0
             }
-
             for (i in list)
                 println("torre: ${i/10} na frequência ${i%10}")
         }else{
