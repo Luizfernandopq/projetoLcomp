@@ -155,8 +155,9 @@ private fun interpretacaoTableaux(atoms: Set<Formula>): MutableMap<String, Boole
     }
     return newInterpretation
 }
-
-
+fun satDPLL(cnf: List<List<Int>>): List<Int> {
+    return satDPLL(cnf, listOf())
+}
 fun satDPLL(cnf: List<List<Int>>, valoracao: List<Int>): List<Int> {
 
 //    println("Antes da unitPropagation")
