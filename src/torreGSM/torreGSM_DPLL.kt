@@ -20,6 +20,27 @@ fun iniciarTorreGSM_DPLL(){
     }
 }
 
+fun torreGSMSemEntradaDPLL(numTorres: Int, pares: MutableList<Pair<Int, Int>>){
+    try {
+        val time = System.currentTimeMillis()
+        val premissas: List<MutableList<Int>> = premissasDPLL(numTorres, pares)
+        var list = solucaoDPLL(premissas)
+        if (list.isNotEmpty()) {
+            list = list as MutableList<Int>
+            list.removeIf {
+                it < 0
+            }
+            for (i in list)
+                print("torre: ${i/10} na frequência ${i%10} \t")
+        }else{
+            print("\nSolução impossivel!")
+        }
+        println("\nDPLL: Cálculos realidados em ${System.currentTimeMillis() - time} milissegundos")
+    } catch (e: Exception){
+        println("Erro: $e")
+    }
+}
+
 fun calcularPossibilidadesDPLL(numTorres: Int, numPares: Int){
     try {
         val pares: MutableList<Pair<Int, Int>> = entrada(numTorres, numPares)
@@ -48,7 +69,7 @@ fun premissasDPLL(numTorres: Int, pares: MutableList<Pair<Int, Int>>): List<Muta
         val clausula = mutableListOf<Int>(i*10 + 1, i*10 + 2, i*10 + 3)
         premissa.add(clausula)
     }
-    println(premissa)
+    //println(premissa)
     for (i in pares) {
         val clausula1 = mutableListOf<Int>(-(i.first*10 + 1), -(i.second*10 + 1))
         val clausula2 = mutableListOf<Int>(-(i.first*10 + 2), -(i.second*10 + 2))
@@ -62,5 +83,5 @@ fun premissasDPLL(numTorres: Int, pares: MutableList<Pair<Int, Int>>): List<Muta
 }
 
 fun solucaoDPLL(premissas: List<MutableList<Int>>): List<Int> {
-    return satDPLL(premissas, listOf())
+    return satDPLL(premissas)
 }

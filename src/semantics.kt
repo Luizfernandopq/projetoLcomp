@@ -54,96 +54,127 @@ private fun satisfiability_check(formula: Formula, allAtoms: MutableSet<Formula>
 }
 
 fun tableaux(formula: Formula): MutableMap<String, Boolean>?{
-    val atoms = solveTableaux(formula, setOf<Formula>())
-    println(formula)
-
+    var listFormula = polimentoFormulas(formula)
+    val literaisValidos = getLiterais(listFormula)
+    listFormula = removeLiterais(listFormula, literaisValidos)
+    if (containsContradicao(literaisValidos))
+        return null
+    val atoms = solveTableaux(listFormula, literaisValidos)
     return interpretacaoTableaux(atoms)
 }
 
-private fun solveTableaux(formula: Formula, atomsValidos: Set<Formula>?): MutableSet<Formula>{
+private fun solveTableaux(listFormula: List<Formula>, literaisValidos: Set<Formula>): Set<Formula>{
     //nova variável para evitar que as mudanças repercutam em outras chamadas
-    val newAtomsValidos: MutableSet<Formula> = mutableSetOf()
-    if (!atomsValidos.isNullOrEmpty())
-        newAtomsValidos.addAll(atomsValidos as MutableSet<Formula>)
-    //println(formula)
-    //println(newAtomsValidos)
+    val mutableLiteraisValidos: MutableSet<Formula> = mutableSetOf()
+    val mutableListFormula = mutableListOf<Formula>()
 
-    return when(formula){
-        is Atom ->{
-            //se já existe negação desse átomo em lista
-            if (Not(formula) in newAtomsValidos) {
-                //retorna uma lista vazia pois é insatistatível
-                mutableSetOf<Formula>()
-            } else {
-                //adiciona átomo à lista
-                newAtomsValidos.add(formula)
-                newAtomsValidos
+    if (!literaisValidos.isNullOrEmpty())
+        mutableLiteraisValidos.addAll(literaisValidos)
+    mutableListFormula.addAll(listFormula)
+
+    if (mutableListFormula.isEmpty())
+        return mutableLiteraisValidos
+
+    while (mutableListFormula.isNotEmpty()){
+        when(val formula = mutableListFormula[0]) {
+            is Atom -> {
+                mutableListFormula.remove(formula)
+                mutableLiteraisValidos.add(formula)
             }
-        }
-        is Not -> {
-            //se o que está dentro da negação é átomo
-            if (formula.proposicao is Atom){
-                //se já existe negação desse átomo em lista
-                if (formula.proposicao in newAtomsValidos){
-                    //retorna uma lista vazia pois é insatistatível
-                    mutableSetOf<Formula>()
-                } else {
-                    //adiciona negação de átomo à lista
-                    newAtomsValidos.add(formula)
-                    newAtomsValidos
-                }
-            } else {
-                //aplicação de deMorgan
-                val newformula = deMorgan(formula)
-                //resolvendo a nova fórmula
-                solveTableaux(newformula, newAtomsValidos)
-            }
-        }
-        is And -> {
-            // puxando uma lista de átomos à esquerda do "And"
-            var atomsAux = solveTableaux(formula.left, newAtomsValidos)
-            // se atomsAux for vazio a fórmula é insatisfatível e não entra no if
-            if (atomsAux.isNotEmpty()){
-                //resolve a parte da direita já com os átomos da esquerda
-                atomsAux = solveTableaux(formula.right, atomsAux) as MutableSet<Formula>
-                //se for insatisfatível podemos começar pelo outro lado
-                if (atomsAux.isEmpty()){
-                    // puxando uma lista de átomos à direita do "And"
-                    atomsAux = solveTableaux(formula.right,newAtomsValidos)
-                    if (atomsAux.isNotEmpty()) {
-                        //resolve a parte da direita já com os átomos da esquerda
-                        atomsAux = solveTableaux(formula.left, atomsAux)
-                    }
+            is Not -> {
+                mutableListFormula.remove(formula)
+                if (formula.proposicao is Atom) {
+                    mutableLiteraisValidos.add(formula)
+                }else {
+                    mutableListFormula.add(deMorgan(formula))
                 }
             }
-            //ou sendo satisfatível ou não, atomsAux ou terá átomos ou será vazio, respectivamente
-            atomsAux
-        }
-        is Or -> {
-            // puxando uma lista de átomos à esquerda do "Or"
-            val atomsAux = solveTableaux(formula.left, newAtomsValidos)
-            // se atomsAux for vazio a fórmula à esquerda é insatisfatível e tem que entrar no if
-            if (atomsAux.isEmpty()) {
-                // puxando uma lista de átomos à direita do "Or" e retornando
-                // (se for vazio então toda a formula é insatisfativel)
-                solveTableaux(formula.right, newAtomsValidos)
-            }else {
-                atomsAux
+            is And -> {
+                mutableListFormula.remove(formula)
+                mutableListFormula.add((formula.left))
+                mutableListFormula.add((formula.right))
             }
-        }
-        is Implies -> {
-            val atomsAux = solveTableaux(formula.right, newAtomsValidos)
-            if (atomsAux.isEmpty()) {
-                // implies é semelhante ao Or. Porém a fórmula à esquerda entra negada
-                solveTableaux(Not(formula.left), newAtomsValidos)
-            }else {
-                atomsAux
+            is Or -> {
+                mutableListFormula.remove(formula)
+                mutableListFormula.add(0,formula.right)
+                var result = solveTableaux(mutableListFormula,mutableLiteraisValidos)
+                if (result.isEmpty()){
+                    mutableListFormula.remove(formula.right)
+                    mutableListFormula.add(0,formula.left)
+                    result = solveTableaux(mutableListFormula,mutableLiteraisValidos)
+                }
+                mutableLiteraisValidos.addAll(result)
+                if (result.isEmpty() || containsContradicao(mutableLiteraisValidos))
+                    return emptySet()
+                return mutableLiteraisValidos
             }
+            else -> error("Não implementado")
         }
-        else -> mutableSetOf<Formula>()
+        if (containsContradicao(mutableLiteraisValidos))
+            return emptySet()
     }
+    return mutableLiteraisValidos
 }
 
+// separa em listas as formulas com And
+// "empurra" as negações pra dentro
+fun polimentoFormulas(formula: Formula):List<Formula>{
+    val mutableListFormula = mutableListOf<Formula>()
+
+    //println(listFormula)
+
+        when(formula){
+            is Not -> {
+                if (formula.proposicao is Atom)
+                    mutableListFormula.add(formula)
+                else
+                    mutableListFormula.addAll(polimentoFormulas(deMorgan(formula)))
+            }
+            is And -> {
+                mutableListFormula.addAll(polimentoFormulas((formula.left)))
+                mutableListFormula.addAll(polimentoFormulas((formula.right)))
+            }
+            else -> mutableListFormula.add(formula)
+        }
+
+    //println(mutableListFormula)
+
+    return mutableListFormula
+}
+
+// retorna todos os literais da lista
+fun getLiterais(listFormula: List<Formula>): Set<Formula>{
+    val literais = mutableSetOf<Formula>()
+    listFormula.forEach {
+        when(it){
+            is Atom -> literais.add(it)
+            is Not -> literais.add(it)
+        }
+    }
+    return literais
+}
+
+fun containsContradicao(literais: Set<Formula>): Boolean{
+
+    literais.forEach{
+        when(it){
+            is Atom -> if (literais.contains(Not(it))) return true
+            is Not -> if (literais.contains((it.proposicao))) return true
+        }
+    }
+    return false
+}
+
+// remove todos os literais da lista
+fun removeLiterais(listFormula: List<Formula>, literais: Set<Formula>): List<Formula>{
+    val mutableFormula = listFormula as MutableList
+    literais.forEach{
+        mutableFormula.remove(it)
+    }
+    return mutableFormula
+}
+
+// cria uma interpretação para os literais do tableaux
 private fun interpretacaoTableaux(atoms: Set<Formula>): MutableMap<String, Boolean>?{
     val newInterpretation = mutableMapOf<String, Boolean>()
     for (i in atoms){
@@ -155,10 +186,15 @@ private fun interpretacaoTableaux(atoms: Set<Formula>): MutableMap<String, Boole
     }
     return newInterpretation
 }
+
 fun satDPLL(cnf: List<List<Int>>): List<Int> {
     return satDPLL(cnf, listOf())
 }
-fun satDPLL(cnf: List<List<Int>>, valoracao: List<Int>): List<Int> {
+
+//após a propagação de unidade realiza uma valoração de um literal e chama
+//a função recursivamente
+//caso seja insatisfatível tenta novamente com o literal negado
+private fun satDPLL(cnf: List<List<Int>>, valoracao: List<Int>): List<Int> {
 
 //    println("Antes da unitPropagation")
 //    println(cnf)
@@ -196,15 +232,18 @@ fun satDPLL(cnf: List<List<Int>>, valoracao: List<Int>): List<Int> {
     }
 }
 
-fun isSatCNF(cnf: List<List<Int>>): Boolean{
+//checa se a cnf é satisfatível
+private fun isSatCNF(cnf: List<List<Int>>): Boolean{
     return cnf.isEmpty()
 }
 
-fun isNotSatCNF(cnf: List<List<Int>>): Boolean{
+// checa se a cnf é não satisfatível
+private fun isNotSatCNF(cnf: List<List<Int>>): Boolean{
     return cnf.contains(listOf())
 }
 
-fun unitPropagation(cnf: List<List<Int>>, valoracao: List<Int>): Pair<MutableList<MutableList<Int>>,MutableList<Int>>{
+// propaga todas as clausulas unitárias
+private fun unitPropagation(cnf: List<List<Int>>, valoracao: List<Int>): Pair<MutableList<MutableList<Int>>,MutableList<Int>>{
     var mutableCNF = copiaLista(cnf)
 
     val mutableValoracao: MutableList<Int> =
@@ -225,7 +264,8 @@ fun unitPropagation(cnf: List<List<Int>>, valoracao: List<Int>): Pair<MutableLis
     return Pair(mutableCNF, mutableValoracao)
 }
 
-fun copiaLista(list: List<List<Int>>): MutableList<MutableList<Int>>{
+// faz a cópia de uma lista de listas de inteiros
+private fun copiaLista(list: List<List<Int>>): MutableList<MutableList<Int>>{
     val copy = mutableListOf<MutableList<Int>>()
     for (subLista in list){
         val i = mutableListOf<Int>()
@@ -237,7 +277,8 @@ fun copiaLista(list: List<List<Int>>): MutableList<MutableList<Int>>{
     return copy
 }
 
-fun getUnitClause(cnf: List<List<Int>>): Int{
+// pega a posição de uma clausula unitária
+private fun getUnitClause(cnf: List<List<Int>>): Int{
     for (i in cnf) {
         if (i.size == 1)
             return cnf.indexOf(i)
@@ -245,7 +286,8 @@ fun getUnitClause(cnf: List<List<Int>>): Int{
     return -1
 }
 
-fun removeAtLiteral(cnf: List<List<Int>>, literal: Int): List<List<Int>>{
+// remove as clausulas com o literal
+private fun removeAtLiteral(cnf: List<List<Int>>, literal: Int): List<List<Int>>{
     val mutableCNF = mutableListOf<List<Int>>()
     for (i in cnf){
         if (literal !in i)
@@ -254,7 +296,8 @@ fun removeAtLiteral(cnf: List<List<Int>>, literal: Int): List<List<Int>>{
     return mutableCNF
 }
 
-fun removeAtNotOfLiteral(cnf: List<List<Int>>, literal: Int): List<List<Int>>{
+// remove da lista os literais que estão negados
+private fun removeAtNotOfLiteral(cnf: List<List<Int>>, literal: Int): List<List<Int>>{
     val mutableCNF = copiaLista(cnf)
 
     //println("Antes: $mutableCNF")

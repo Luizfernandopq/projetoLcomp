@@ -27,6 +27,22 @@ fun iniciarTorreGSM(){
         iniciarTorreGSM()
     }
 }
+
+fun torreGSMSemEntrada(numTorres: Int, pares: MutableList<Pair<Int, Int>>){
+    try {
+        /*
+        * aqui começa o a resolução do problema
+        * */
+        val time = System.currentTimeMillis()
+        val atoms: MutableList<Atom> = criaAtomos(numTorres)
+        val premissas: Formula = premissas(numTorres, atoms, pares)
+        println(solucao(premissas))
+        println("Força bruta: Cálculos realidados em ${System.currentTimeMillis() - time} milissegundos")
+    } catch (e: Exception){
+        println(listOf(e.toString()))
+    }
+}
+
 /*
 * Esta é a função central que irá imprimir o resultado
 * */
@@ -116,7 +132,7 @@ fun solucao(formula: Formula): List<String>{
             if (i.value)
                 interpretation.add(i.key)
         }
-        println(interpretation)
+        //println(interpretation)
         var k = 1
         for (j in interpretation) {
             if (j.startsWith("$k")){
@@ -127,3 +143,4 @@ fun solucao(formula: Formula): List<String>{
         saida
     } ?: listOf("solução impossível")
 }
+
